@@ -3,6 +3,7 @@ from discord import app_commands
 import discord
 import json
 
+# Load configuration from file
 with open('config_v2.json', 'r') as f:
     config = json.load(f)
 
@@ -40,7 +41,8 @@ async def on_voice_state_update(member, before, after):
     server_id = guild.id
     server_data = server_configs.get(server_id)
 
-    if not server_data: return
+    if not server_data:
+        return
 
     target_channel_id = server_data['target_channel_id']
     target_category_id = server_data['target_category_id']
@@ -65,9 +67,21 @@ async def on_voice_state_update(member, before, after):
             if member.id in user_channels:
                 del user_channels[member.id]
 
-@tree.command(name="setup", description="Sets the bot up.")
+@tree.command(name="help", description="Shows the help menu.")
+async def help(interaction):
+    embed = discord.Embed(
+        title="Help Menu",
+        description="The help menu for Game Host.\n\nHere are the commands you can use:",
+        colour=0x00b0f4
+    )
+    embed.add_field(name="/help", value="Brings up this menu.", inline=True)
+    embed.add_field(name="/bind", value="Bind the bot to a certain channel.", inline=True)
+
+    await interaction.response.send_message(embed=embed)
+
+@tree.command(name="bind", description="Sets the bot up.")
 @app_commands.describe(channel="The create channel.", category="The room category. If empty, will be the same category as the create channel.")
-async def setup(interaction, channel: discord.VoiceChannel, category: discord.CategoryChannel = None):
+async def bind(interaction, channel: discord.VoiceChannel, category: discord.CategoryChannel = None):
     server_id = interaction.guild_id
     if server_id not in server_configs:
         server_configs[server_id] = {
@@ -76,12 +90,31 @@ async def setup(interaction, channel: discord.VoiceChannel, category: discord.Ca
             'user_channels': {}
         }
     
-    if category == None: category = channel.category
+    if not category:
+        category = channel.category
     
     server_data = server_configs[server_id]
     server_data['target_channel_id'] = channel.id
     server_data['target_category_id'] = category.id
     
-    await interaction.response.send_message("Config updated successfully.")
+    embed = discord.Embed(
+        title="Binding menu",
+        description=f"You have now binded Game Host to {channel}.",
+        colour=0x00b0f4
+    )
+    embed.add_field(name="Discord support", value="https://discord.gg/gYhaWJz8UZ", inline=True)
+    
+    await interaction.response.send_message(embed=embed)
+
+    # Save server configs to file
+    with open('serverconfigs.json', 'w') as f:
+        json.dump(server_configs, f)
+
+# Load server configs from file, if available
+try:
+    with open('serverconfigs.json', 'r') as f:
+        server_configs = json.load(f)
+except FileNotFoundError:
+    pass
 
 client.run(token)
