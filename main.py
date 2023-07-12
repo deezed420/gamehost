@@ -1,13 +1,9 @@
-from discord.ext import tasks
 from discord import app_commands
-import discord
-import json
+from dotenv import load_dotenv
+from discord.ext import tasks
+import discord, os
 
-# Load configuration from file
-with open('config_v2.json', 'r') as f:
-    config = json.load(f)
-
-token = config['bot']['token']
+load_dotenv()
 
 client = discord.Client(intents=discord.Intents.all())
 tree = app_commands.CommandTree(client)
@@ -26,23 +22,21 @@ async def check_empty_channels():
     for server_id, server_data in list(server_configs.items()):
         guild = client.get_guild(server_id)
         if guild:
-            target_channel_id = server_data['target_channel_id']
-            target_category_id = server_data['target_category_id']
             user_channels = server_data['user_channels']
             
             for channel_id, channel in list(user_channels.items()):
                 if len(channel.members) == 0:
                     await channel.delete()
                     del user_channels[channel_id]
-
+                    
+    
 @client.event
 async def on_voice_state_update(member, before, after):
     guild = member.guild
     server_id = guild.id
     server_data = server_configs.get(server_id)
 
-    if not server_data:
-        return
+    if not server_data: return
 
     target_channel_id = server_data['target_channel_id']
     target_category_id = server_data['target_category_id']
@@ -98,23 +92,11 @@ async def bind(interaction, channel: discord.VoiceChannel, category: discord.Cat
     server_data['target_category_id'] = category.id
     
     embed = discord.Embed(
-        title="Binding menu",
+        title="Binded",
         description=f"You have now binded Game Host to {channel}.",
         colour=0x00b0f4
-    )
-    embed.add_field(name="Discord support", value="https://discord.gg/gYhaWJz8UZ", inline=True)
+    ).add_field(name="Discord support", value="https://discord.gg/gYhaWJz8UZ", inline=True)
     
     await interaction.response.send_message(embed=embed)
 
-    # Save server configs to file
-    with open('serverconfigs.json', 'w') as f:
-        json.dump(server_configs, f)
-
-# Load server configs from file, if available
-try:
-    with open('serverconfigs.json', 'r') as f:
-        server_configs = json.load(f)
-except FileNotFoundError:
-    pass
-
-client.run(token)
+client.run(os.getenv('token'))
