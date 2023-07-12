@@ -69,7 +69,7 @@ async def help(interaction):
         colour=0x00b0f4
     )
     embed.add_field(name="/help", value="Brings up this menu.", inline=True)
-    embed.add_field(name="/bind", value="Bind the bot to a certain channel.", inline=True)
+    embed.add_field(name="/bind", value="Bind the bot to a channel.", inline=True)
 
     await interaction.response.send_message(embed=embed)
 
